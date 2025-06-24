@@ -171,7 +171,7 @@ export default function Home() {
         <meta name="description" content="Track your MOVE token rewards from Canopy vaults - Movement Network's all-in-one yield aggregation platform. Advanced analytics for DeFi staking." />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
       </Head>
 
       <div className="container">
