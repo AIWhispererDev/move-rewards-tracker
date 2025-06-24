@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
-import { FaXTwitter } from 'react-icons/fa6';
+import { FaXTwitter, FaDownload } from 'react-icons/fa6';
 
 export default function Home() {
   const [addresses, setAddresses] = useState(['']);
@@ -115,6 +115,40 @@ export default function Home() {
   const formatPercentage = (percentage) => {
     const sign = percentage >= 0 ? '+' : '';
     return `${sign}${percentage.toFixed(2)}%`;
+  };
+
+  // Download claims as CSV. Accepts either enriched claim objects (with moveAmount) or raw claimHistory entries.
+  const downloadCSV = (claims, address) => {
+    if (!claims || claims.length === 0) {
+      alert('No claims data available to download.');
+      return;
+    }
+
+    const headers = ['Timestamp', 'Date (UTC)', 'MOVE Amount', 'Value (USD)', 'Pool Address'];
+        // Normalise claim object to ensure we have a numeric MOVE amount
+    const rows = claims.map(claim => {
+      // Some objects coming from `claimHistory` don't include `moveAmount` – derive it
+      const moveAmt = claim.moveAmount !== undefined ? claim.moveAmount : (claim.rewardAmountParsed || 0) / Math.pow(10, 8);
+      return [
+        claim.timestamp,
+        formatDate(claim.timestamp),
+        moveAmt,
+        (moveAmt * movePrice).toFixed(2),
+        claim.poolAddress
+      ];
+    });
+
+    let csvContent = "data:text/csv;charset=utf-8,"
+      + headers.join(",") + "\n"
+      + rows.map(e => e.join(",")).join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `move_claims_${address}.csv`);
+    document.body.appendChild(link); 
+    link.click();
+    document.body.removeChild(link);
   };
 
   const totalTokensClaimed = results?.results
@@ -314,10 +348,22 @@ export default function Home() {
                 {results.results?.map((result, index) => (
                   <div key={index} className="address-result">
                     <div className="address-header">
-                      <h3>Address: {result.address}</h3>
-                      <span className={`status ${result.success ? 'success' : 'error'}`}>
-                        {result.success ? '✓ Success' : '✗ Error'}
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <h3>Address: {result.address}</h3>
+                        <span className={`status ${result.success ? 'success' : 'error'}`}>
+                          {result.success ? '✓ Success' : '✗ Error'}
+                        </span>
+                      </div>
+                      {result.success && result.data.claimHistory?.length > 0 && (
+                        <button 
+                          className="download-csv-btn"
+                          onClick={() => downloadCSV(result.data.claimHistory, result.address)}
+                          title="Download all claims as CSV"
+                        >
+                          <FaDownload size={12} />
+                          <span>Download History CSV</span>
+                        </button>
+                      )}
                     </div>
                     
                     {result.success ? (
